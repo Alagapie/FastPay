@@ -1,0 +1,17 @@
+{
+  "name": "fastpay-voice",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FastPay Module 4: Voice. Customers speak instead of typing on the payment-help page (English, Pidgin, Hausa, Yoruba, Igbo) and hear the answers in their language. Moves no money itself.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/main.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/main.js",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 \"test/**/*.test.js\"",
+    "languages": "node --disable-warning=ExperimentalWarning scripts/language-check.js",
+    "voices": "node --disable-warning=ExperimentalWarning scripts/voice-samples.js"
+  }
+}

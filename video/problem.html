@@ -1,0 +1,281 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>FastPay: the problem (20s)</title>
+<style>
+  html, body { margin: 0; background: #05080f; height: 100%; display: flex; align-items: center; justify-content: center; }
+  canvas { width: 100vw; max-width: 1280px; aspect-ratio: 16 / 9; display: block; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1280" height="720"></canvas>
+<script>
+// One continuous shot: Amina's phone on the left tells the story as a chat,
+// big headlines on the right say it in a sentence. The colour of the light follows the mood.
+const cv = document.getElementById('c'), g = cv.getContext('2d');
+const W = 1280, H = 720, DUR = 20;
+const F = '"Segoe UI Variable Display", "Segoe UI", system-ui, Arial, sans-serif';
+const INK = '#0f172a', MUTE = '#64748b', BLUE = '#2563eb', GREEN = '#10b981', RED = '#ef4444', AMBER = '#f59e0b';
+
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const ease = x => 1 - Math.pow(1 - clamp(x), 3);
+const back = x => { x = clamp(x); const s = 1.7; return 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2); };
+const prog = (t, a, d) => clamp((t - a) / d);
+const fade = a => { g.globalAlpha = g.globalAlpha * a; };
+
+function rr(x, y, w, h, r, fill, stroke, lw) {
+  g.beginPath(); g.roundRect(x, y, w, h, r);
+  if (fill) { g.fillStyle = fill; g.fill(); }
+  if (stroke) { g.strokeStyle = stroke; g.lineWidth = lw || 1.5; g.stroke(); }
+}
+function text(s, x, y, size, color, weight, align) {
+  g.font = `${weight || 400} ${size}px ${F}`; g.fillStyle = color; g.textAlign = align || 'left'; g.textBaseline = 'middle';
+  g.fillText(s, x, y);
+}
+
+// ---------- light and atmosphere ----------
+const MOODS = [[0, [16, 185, 129]], [4.5, [239, 68, 68]], [8.5, [245, 158, 11]], [13.5, [139, 92, 246]], [18, [37, 99, 235]]];
+function mood(t) {
+  let c = MOODS[0][1];
+  for (let i = 1; i < MOODS.length; i++) { const p = ease(prog(t, MOODS[i][0] - 0.2, 0.9)); c = c.map((v, k) => v + (MOODS[i][1][k] - v) * p); }
+  return c.map(Math.round);
+}
+const noise = document.createElement('canvas'); noise.width = noise.height = 220;
+{ const n = noise.getContext('2d'), d = n.createImageData(220, 220);
+  for (let i = 0; i < 220 * 220; i++) { const v = Math.random() * 255; d.data[i * 4] = d.data[i * 4 + 1] = d.data[i * 4 + 2] = v; d.data[i * 4 + 3] = 255; }
+  n.putImageData(d, 0, 0); }
+function background(t) {
+  g.fillStyle = '#05080f'; g.fillRect(0, 0, W, H);
+  const [r, gg, b] = mood(t);
+  [[300 + Math.sin(t * 0.3) * 60, 400, 560, 0.36], [1020 + Math.cos(t * 0.25) * 80, 160, 480, 0.2], [860, 760, 420, 0.14]].forEach(([x, y, rad, a]) => {
+    const gr = g.createRadialGradient(x, y, 0, x, y, rad);
+    gr.addColorStop(0, `rgba(${r},${gg},${b},${a})`); gr.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+    g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  });
+}
+function finish() {
+  const v = g.createRadialGradient(W / 2, H / 2, 380, W / 2, H / 2, 860);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)');
+  g.fillStyle = v; g.fillRect(0, 0, W, H);
+  g.save(); g.globalAlpha = 0.035; g.translate(-Math.random() * 200, -Math.random() * 200);
+  g.fillStyle = g.createPattern(noise, 'repeat'); g.fillRect(0, 0, W + 220, H + 220); g.restore();
+}
+
+// ---------- the chat on the phone ----------
+const FS = 19, LH = 26;
+function itemH(it) {
+  return it.k === 'b' ? it.lines.length * LH + 24 : it.k === 'pay' ? 152 : it.k === 'chip' ? 30 : it.k === 'voice' ? 58 : 46;
+}
+function drawItem(it, x0, y, sw, p, tl) {
+  g.save(); fade(p); g.translate(0, (1 - p) * 16);
+  const h = itemH(it);
+  if (it.k === 'b') {
+    g.font = `500 ${FS}px ${F}`;
+    const w = Math.max(...it.lines.map(s => g.measureText(s).width)) + 32, right = it.side === 'r';
+    const x = right ? x0 + sw - 16 - w : x0 + 16;
+    rr(x, y, w, h, 20, right ? BLUE : '#fff');
+    it.lines.forEach((s, i) => text(s, x + 16, y + 12 + LH / 2 + i * LH, FS, right ? '#fff' : INK, 500));
+  } else if (it.k === 'pay') {
+    const w = 252, x = x0 + sw - 16 - w;
+    rr(x, y, w, h, 20, '#fff', '#dbe2ee');
+    text('FastPay', x + 20, y + 28, 15, BLUE, 800);
+    text('Payment', x + w - 20, y + 28, 13, MUTE, 500, 'right');
+    text('$25.00', x + 20, y + 68, 38, INK, 800);
+    text('to Musty', x + 20, y + 100, 15, MUTE, 500);
+    const q = back(prog(tl, it.at + 0.55, 0.45));
+    if (q > 0) { g.save(); g.translate(x + 20, y + 128); g.scale(q, q);
+      rr(0, -14, 132, 28, 14, '#d1fae5'); text('✓  Successful', 66, 0, 14, '#047857', 700, 'center'); g.restore(); }
+  } else if (it.k === 'chip') {
+    g.font = `700 13px ${F}`; const w = g.measureText(it.text).width + 28;
+    rr(x0 + sw / 2 - w / 2, y + 2, w, 26, 13, it.red ? '#fee2e2' : '#dde3ee');
+    text(it.text, x0 + sw / 2, y + 15, 13, it.red ? '#b91c1c' : MUTE, 700, 'center');
+  } else if (it.k === 'voice') {
+    const w = 236, x = x0 + sw - 16 - w;
+    rr(x, y, w, h, 20, BLUE);
+    g.fillStyle = '#fff'; g.beginPath(); g.moveTo(x + 20, y + 18); g.lineTo(x + 38, y + 29); g.lineTo(x + 20, y + 40); g.fill();
+    for (let i = 0; i < 22; i++) {
+      const a = 5 + 15 * Math.abs(Math.sin(i * 1.7 + 0.6) * Math.cos(i * 0.6 + tl * 3));
+      g.globalAlpha = g.globalAlpha; rr(x + 52 + i * 6.2, y + 29 - a, 3.4, a * 2, 1.7, 'rgba(255,255,255,.9)');
+    }
+    text('0:07', x + w - 16, y + 29, 13, 'rgba(255,255,255,.85)', 600, 'right');
+  } else { // typing
+    rr(x0 + 16, y, 74, h, 20, '#fff');
+    for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(x0 + 38 + i * 15, y + 23 - Math.max(0, Math.sin(tl * 9 - i * 0.9)) * 5, 4.2, 0, 7); g.fillStyle = '#94a3b8'; g.fill(); }
+  }
+  g.restore();
+}
+function chat(scr, tl, sx, sy, sw, bottom) {
+  g.fillStyle = '#eef1f7'; g.fillRect(sx, sy, sw, 900);
+  const top = sy + 104;
+  let y = top + 16; const lay = [];
+  for (const it of scr.items) {
+    if (tl < it.at || (it.until && tl >= it.until)) continue;
+    const p = ease(prog(tl, it.at, 0.4));
+    lay.push([it, y, p]); y += (itemH(it) + 12) * p;
+  }
+  const scroll = Math.max(0, y - bottom);
+  g.save(); g.beginPath(); g.rect(sx, top, sw, bottom - top); g.clip();
+  lay.forEach(([it, yy, p]) => drawItem(it, sx, yy - scroll, sw, p, tl));
+  g.restore();
+  // header
+  g.fillStyle = '#fff'; g.fillRect(sx, sy, sw, 104);
+  g.fillStyle = '#e2e8f0'; g.fillRect(sx, sy + 103, sw, 1);
+  g.beginPath(); g.arc(sx + 46, sy + 66, 22, 0, 7); g.fillStyle = scr.tint; g.fill();
+  text(scr.initial, sx + 46, sy + 67, 19, '#fff', 800, 'center');
+  text(scr.name, sx + 80, sy + 56, 19, INK, 700);
+  text(scr.sub, sx + 80, sy + 79, 13, MUTE, 500);
+}
+const SCREENS = [
+  { from: 0, to: 8.5, name: 'Musty', sub: 'your brother', initial: 'M', tint: '#0ea5e9', items: [
+    { k: 'b', side: 'r', lines: ['Sent your exam fee 💙'], at: 0.7 },
+    { k: 'pay', at: 1.5 },
+    { k: 'typing', at: 4.2, until: 5.0 },
+    { k: 'b', side: 'l', lines: ['Sis, nothing came in.'], at: 5.0 },
+    { k: 'b', side: 'l', lines: ['My balance is still $0.00'], at: 6.0 },
+    { k: 'b', side: 'l', lines: ['Registration closes', 'Friday 😟'], at: 7.0 },
+  ] },
+  { from: 8.5, to: 13.5, name: 'Customer Support', sub: 'Replies in 3–5 working days', initial: '?', tint: '#64748b', items: [
+    { k: 'chip', text: 'Day 1', at: 0.3 },
+    { k: 'b', side: 'r', lines: ['My brother never got', 'the $25 I sent.'], at: 0.5 },
+    { k: 'b', side: 'l', lines: ['Ticket #48213 received.'], at: 1.2 },
+    { k: 'chip', text: 'Day 4', at: 1.9 },
+    { k: 'b', side: 'l', lines: ['We are looking into it.', 'Please be patient.'], at: 2.1 },
+    { k: 'chip', text: 'Day 7', red: true, at: 3.0 },
+    { k: 'b', side: 'l', lines: ['Your case is still', 'under review.'], at: 3.2 },
+  ] },
+  { from: 13.5, to: 19, name: 'Customer Support', sub: 'Replies in 3–5 working days', initial: '?', tint: '#64748b', items: [
+    { k: 'chip', text: 'Mama Bisi · market trader', at: 0.3 },
+    { k: 'voice', at: 0.6 },
+    { k: 'typing', at: 1.5, until: 2.1 },
+    { k: 'b', side: 'l', lines: ['Sorry, we can’t process', 'voice notes. Please type', 'your complaint in English.'], at: 2.1 },
+  ] },
+];
+const PH = { x: 104, y: 46, w: 384, h: 820, r: 56 };
+function phone(t) {
+  const pin = ease(prog(t, 0, 0.9)), pout = ease(prog(t, 17.9, 0.5));
+  if (pout >= 1) return;
+  g.save(); fade(pin * (1 - pout));
+  g.translate(PH.x + PH.w / 2 - pout * 160, PH.y + PH.h / 2 + (1 - pin) * 140); g.rotate(-0.035); g.translate(-PH.w / 2, -PH.h / 2);
+  g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 70; g.shadowOffsetY = 30; rr(0, 0, PH.w, PH.h, PH.r, '#0a0e17'); g.restore();
+  rr(0, 0, PH.w, PH.h, PH.r, null, '#2b3550', 2);
+  const sx = 11, sy = 11, sw = PH.w - 22;
+  g.save(); g.beginPath(); g.roundRect(sx, sy, sw, PH.h - 22, PH.r - 11); g.clip();
+  for (const s of SCREENS) {
+    if (t < s.from || t > s.to + 0.4) continue;
+    const a = Math.min(s.from === 0 ? 1 : ease(prog(t, s.from, 0.4)), 1);
+    g.save(); fade(a); g.translate((1 - a) * 60, 0); chat(s, t - s.from, sx, sy, sw, 660); g.restore();
+  }
+  g.restore();
+  rr(PH.w / 2 - 52, 24, 104, 28, 14, '#0a0e17');
+  g.restore();
+}
+
+// ---------- headlines on the right ----------
+const TX = 574;
+function label(s, t, color) {
+  const p = ease(prog(t, 0, 0.5)); g.save(); fade(p);
+  g.beginPath(); g.arc(TX + 6, 190, 6, 0, 7); g.fillStyle = color; g.fill();
+  g.letterSpacing = '3px'; text(s, TX + 24, 191, 17, color, 700); g.letterSpacing = '0px';
+  g.restore();
+}
+function headline(lines, t, y, size, accent = {}) {
+  g.font = `800 ${size}px ${F}`; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  let i = 0;
+  lines.forEach((ln, li) => {
+    let x = TX;
+    ln.split(' ').forEach(wd => {
+      const p = ease(prog(t, 0.2 + i * 0.075, 0.5));
+      g.save(); fade(p); g.fillStyle = accent[wd] || '#fff';
+      g.fillText(wd, x, y + li * size * 1.2 + (1 - p) * 26); g.restore();
+      x += g.measureText(wd + ' ').width; i++;
+    });
+  });
+}
+function pill(s, t, at, y, fg, bgc) {
+  const p = back(prog(t, at, 0.5)); if (p <= 0) return;
+  g.font = `700 22px ${F}`; const w = g.measureText(s).width + 44;
+  g.save(); g.translate(TX, y); g.scale(p, p);
+  rr(0, 0, w, 50, 25, bgc, fg, 1.5); text(s, 22, 26, 22, fg, 700);
+  g.restore();
+}
+const BEATS = [
+  [0, 4.5, t => {
+    label('MONDAY · 9:02 AM', t, GREEN);
+    headline(['Amina sends her', 'brother $25 for', 'his exam fee.'], t, 290, 66);
+    pill('✓  The app says: Successful', t, 2.4, 486, '#6ee7b7', 'rgba(16,185,129,.16)');
+  }],
+  [4.5, 8.5, t => {
+    label('MONDAY · 9:40 AM', t, RED);
+    headline(['But Musty', 'got nothing.'], t, 310, 92, { 'nothing.': '#f87171' });
+    pill('Musty’s balance: $0.00', t, 1.5, 470, '#fca5a5', 'rgba(239,68,68,.16)');
+  }],
+  [8.5, 13.5, t => {
+    label('ONE WEEK LATER', t, AMBER);
+    headline(['Seven days of emails.', 'Still “under review”.'], t, 290, 56, { '“under': '#fbbf24', 'review”.': '#fbbf24' });
+    for (let i = 0; i < 7; i++) {           // the week filling up
+      const p = ease(prog(t, 0.5 + i * 0.42, 0.4)), x = TX + i * 84, y = 420;
+      rr(x, y, 72, 72, 16, 'rgba(255,255,255,.06)', 'rgba(255,255,255,.16)');
+      if (p > 0) { g.save(); fade(p); rr(x, y, 72, 72, 16, i === 6 ? RED : AMBER);
+        text('DAY', x + 36, y + 22, 12, 'rgba(0,0,0,.6)', 800, 'center'); text(String(i + 1), x + 36, y + 46, 30, '#0b0f19', 800, 'center'); g.restore(); }
+    }
+  }],
+  [13.5, 18, t => {
+    label('AND FOR MILLIONS', t, '#a78bfa');
+    headline(['Can’t read or type?', 'No help at all.'], t, 300, 64, { 'No': '#c4b5fd', 'help': '#c4b5fd', 'at': '#c4b5fd', 'all.': '#c4b5fd' });
+    pill('No voice.  No local language.', t, 2.3, 430, '#c4b5fd', 'rgba(139,92,246,.18)');
+  }],
+];
+function logo(t) {
+  if (t < 0) return;
+  const p = back(prog(t, 0.15, 0.6));
+  g.save(); fade(clamp(p)); g.translate(W / 2, 320); g.scale(0.75 + 0.25 * p, 0.75 + 0.25 * p);
+  rr(-262, -78, 108, 108, 28, BLUE);
+  g.strokeStyle = '#fff'; g.lineWidth = 12; g.lineCap = 'round'; g.lineJoin = 'round';
+  g.beginPath(); g.moveTo(-196, -58); g.lineTo(-228, -18); g.lineTo(-198, -18); g.lineTo(-222, 12); g.stroke();
+  text('FastPay', -130, -22, 112, '#fff', 800);
+  g.restore();
+  g.save(); fade(ease(prog(t, 0.7, 0.6)));
+  text('Payment help that investigates, resolves, and speaks your language.', W / 2, 446, 29, '#cbd5e1', 500, 'center');
+  g.restore();
+}
+
+function drawAt(t) {
+  g.globalAlpha = 1; background(t);
+  phone(t);
+  for (const [a, b, fn] of BEATS) {
+    if (t < a || t >= b) continue;
+    const out = 1 - prog(t, b - 0.3, 0.3);
+    g.save(); fade(out); g.translate(0, -(1 - out) * 18); fn(t - a); g.restore();
+  }
+  logo(t - 18);
+  finish();
+}
+window.drawAt = drawAt;
+
+let t0 = performance.now(), looping = true;
+function loop() {
+  let t = (performance.now() - t0) / 1000;
+  if (t > DUR) { if (looping) { t0 = performance.now(); t = 0; } else t = DUR; }
+  drawAt(t); requestAnimationFrame(loop);
+}
+loop();
+
+// Used by render.js: records exactly one pass and returns it as base64.
+window.record = () => new Promise((resolve, reject) => {
+  const mime = ['video/mp4;codecs=avc1.640028', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(m => MediaRecorder.isTypeSupported(m));
+  const rec = new MediaRecorder(cv.captureStream(30), { mimeType: mime, videoBitsPerSecond: 10_000_000 });
+  const chunks = [];
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onerror = e => reject(String(e.error || e));
+  rec.onstop = async () => {
+    const buf = new Uint8Array(await new Blob(chunks).arrayBuffer());
+    let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+    resolve({ mime, b64: btoa(s) });
+  };
+  looping = false; t0 = performance.now(); rec.start(500);
+  setTimeout(() => rec.stop(), DUR * 1000 + 300);
+});
+</script>
+</body>
+</html>

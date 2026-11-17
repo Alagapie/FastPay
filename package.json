@@ -1,0 +1,19 @@
+{
+  "name": "fastpay",
+  "version": "0.1.0",
+  "description": "Peer-to-peer USD wallet with PayPal Sandbox flows, plus investigation, resolution and voice modules.",
+  "private": true,
+  "scripts": {
+    "setup": "npm install && cd server && npm install && cd ../client && npm install",
+    "test": "npm test --prefix investigation && npm test --prefix resolution && npm test --prefix digital-human",
+    "dev": "concurrently -n api,web -c blue,magenta \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix client",
+    "start": "npm start --prefix server",
+    "tunnel": "npx --yes cloudflared tunnel --url http://localhost:4000",
+    "check-paypal": "npm run check-paypal --prefix server",
+    "update-webhook": "npm run update-webhook --prefix server --"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

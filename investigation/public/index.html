@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>FastPay · Payment help</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+  <script src="/voice.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/" aria-label="FastPay Payment help">
+        <span class="brand-mark" aria-hidden="true">F</span>
+        <span class="brand-text"><strong>FastPay</strong><span>Payment help</span></span>
+      </a>
+      <div id="who" class="who"></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="conversation">
+      <div id="main" class="thread-wrap" aria-live="polite">
+        <div class="boot"><span class="spinner"></span></div>
+      </div>
+      <form id="composer" class="composer" hidden>
+        <div class="composer-box">
+          <select id="voice-lang" class="voice-lang" aria-label="Language" hidden></select>
+          <textarea id="input" rows="1" maxlength="1000" placeholder="Describe what went wrong, e.g. I sent Musa $50 yesterday, but he hasn't received it" aria-label="Describe the problem"></textarea>
+          <button id="mic" type="button" class="mic-btn" aria-label="Speak" title="Speak instead of typing" hidden></button>
+          <button id="send" type="submit" class="send-btn" aria-label="Send"></button>
+        </div>
+        <div class="composer-hint">Press Enter to send · Shift + Enter for a new line<span class="voice-hint"> · Tap the microphone to speak in English, Pidgin, Hausa, Yoruba or Igbo</span></div>
+      </form>
+    </main>
+    <aside id="aside" class="case-panel" aria-label="Case progress"></aside>
+  </div>
+
+  <div id="toast" class="toast" role="alert" hidden></div>
+</body>
+</html>

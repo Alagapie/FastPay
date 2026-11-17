@@ -1,0 +1,14 @@
+{
+  "name": "fastpay-resolution",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FastPay Module 3: decides, authorizes and executes the resolution of an investigated payment complaint.",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 --test-timeout=60000 \"test/**/*.test.js\""
+  }
+}

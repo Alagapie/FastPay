@@ -1,0 +1,16 @@
+{
+  "name": "fastpay-investigation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FastPay Module 2: investigates FastPay payment complaints and produces evidence-backed reports.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/main.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/main.js",
+    "report": "node --disable-warning=ExperimentalWarning scripts/report.js",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 --test-timeout=60000 \"test/**/*.test.js\""
+  }
+}

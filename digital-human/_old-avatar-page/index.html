@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FastPay Voice Help</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <span class="brand">FastPay</span>
+      <button id="newBtn" class="ghost" type="button">New problem</button>
+    </header>
+
+    <section class="stage" aria-live="polite">
+      <div id="avatar" class="avatar" data-state="idle" aria-hidden="true">
+        <img src="/avatar.png" alt="" width="200" height="200">
+        <div class="wave"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <p id="name" class="name">FastPay Assistant</p>
+      <p id="status" class="status">Tap the microphone and speak.</p>
+    </section>
+
+    <nav id="langs" class="langs" aria-label="Language">
+      <button data-lang="ha" type="button" hidden>Hausa</button>
+      <button data-lang="yo" type="button" hidden>Yorùbá</button>
+      <button data-lang="ig" type="button" hidden>Igbo</button>
+      <button data-lang="pcm" type="button" hidden>Pidgin</button>
+      <button data-lang="en" type="button" hidden>English</button>
+    </nav>
+
+    <div class="talk">
+      <button id="mic" class="mic" type="button" aria-label="Tap and speak">
+        <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2Z"/></svg>
+      </button>
+      <button id="replay" class="ghost" type="button" hidden>Say it again</button>
+    </div>
+
+    <section id="cards" class="cards"></section>
+
+    <details class="transcript-box" open>
+      <summary>Conversation</summary>
+      <ol id="transcript" class="transcript"></ol>
+      <form id="typeForm" class="type">
+        <input id="typeInput" type="text" autocomplete="off" placeholder="Or type here…" aria-label="Type a message">
+        <button type="submit">Send</button>
+      </form>
+    </details>
+
+    <div id="toast" class="toast" hidden></div>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
